@@ -8,67 +8,42 @@ int main()
     if (!terminal.Run())
         return 1;
 
+    if (!terminal.Clear())
+        return 1;
+
     while (terminal.Run())
     {
-        if (!terminal.Clear())
-            return 1;
+        COORD currentCursorPosition = terminal.CursorPosition();
+        COORD terminalSize = terminal.TerminalSize();
 
-        terminal.Exit();
+        INPUT_RECORD input = terminal.ReadInput();
+
+        if (input.EventType == KEY_EVENT)
+        {
+            if (input.Event.KeyEvent.wVirtualKeyCode == VK_RIGHT && input.Event.KeyEvent.bKeyDown)
+            {
+                if (currentCursorPosition.X + 1 < terminalSize.X)
+                {
+                    currentCursorPosition.X += 1;
+                }
+            }
+            else if (input.Event.KeyEvent.wVirtualKeyCode == VK_LEFT && input.Event.KeyEvent.bKeyDown)
+            {
+                if (currentCursorPosition.X - 1 > 0)
+                {
+                    currentCursorPosition.X -= 1;
+                }
+            }
+
+            else if (input.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE && input.Event.KeyEvent.bKeyDown)
+            {
+                terminal.Exit();
+            }
+        }
+
+        terminal.MoveCursor(currentCursorPosition);
+        terminal.UpdateCursor(currentCursorPosition);
     }
-
-    // INPUT_RECORD irInBuf;
-    // DWORD dwNumRead;
-
-    // COORD cPos = {0, 0};
-
-    // while (true)
-    // {
-    //     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    //     if (!GetConsoleScreenBufferInfo(hStdout, &csbi))
-    //         ErrorExit("GetConsoleScreenBufferInfo");
-
-    //     DWORD written = 0;
-    //     PCWSTR sequence = L"\x1b[2J";
-    //     if (!WriteConsoleW(hStdout, sequence, (DWORD)wcslen(sequence), &written, NULL))
-    //     {
-    //         SetConsoleMode(hStdout, fdwSaveOldMode);
-    //         ErrorExit("WriteConsoleW");
-    //     }
-
-    //     if (!SetConsoleCursorPosition(hStdout, cPos))
-    //     {
-    //         SetConsoleMode(hStdout, fdwSaveOldMode);
-    //         ErrorExit("SetConsoleCursorPosition");
-    //     }
-
-    //     if (!ReadConsoleInput(hStdin, &irInBuf, 1, &dwNumRead))
-    //     {
-    //         SetConsoleMode(hStdout, fdwSaveOldMode);
-    //         ErrorExit("ReadConsoleInput");
-    //     }
-
-    //     if (dwNumRead != 1)
-    //         continue;
-
-    //     if (irInBuf.EventType == KEY_EVENT)
-    //     {
-    //         if (irInBuf.Event.KeyEvent.bKeyDown)
-    //         {
-    //             if (irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
-    //                 break;
-
-    //             if (irInBuf.Event.KeyEvent.wVirtualKeyCode == VK_RIGHT)
-    //             {
-    //                 if (cPos.X + 1 < csbi.dwSize.X)
-    //                 {
-    //                     cPos.X += 1;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // SetConsoleMode(hStdout, fdwSaveOldMode);
 
     return 0;
 }

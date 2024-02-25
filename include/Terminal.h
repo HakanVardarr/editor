@@ -27,9 +27,16 @@ public:
     ~Terminal();
 
     VOID Exit();
+    VOID UpdateCursor(COORD pos);
 
     BOOL Clear();
     BOOL Run();
+    BOOL MoveCursor(COORD pos);
+
+    COORD CursorPosition() const;
+    COORD TerminalSize() const;
+
+    INPUT_RECORD ReadInput();
 
 private:
     HANDLE hStdin, hStdout;

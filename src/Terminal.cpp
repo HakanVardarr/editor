@@ -40,20 +40,19 @@ Terminal::~Terminal()
     SetConsoleMode(hStdin, dwOldMode);
 }
 
-VOID Terminal::Cleanup(std::string sMessage)
-{
-    std::cerr << sMessage << std::endl;
-    SetConsoleMode(hStdin, dwOldMode);
-}
-
 VOID Terminal::Exit()
 {
     bRun = false;
 }
 
+VOID Terminal::UpdateCursor(COORD pos)
+{
+    cPos = pos;
+}
+
 BOOL Terminal::Clear()
 {
-    if (!SetConsoleCursorPosition(hStdout, cPos))
+    if (!SetConsoleCursorPosition(hStdout, {0, 0}))
     {
         CLEANUP_AND_RETURN_FALSE("Cannot set cursor position");
     }
@@ -71,6 +70,45 @@ BOOL Terminal::Clear()
 BOOL Terminal::Run()
 {
     return bRun;
+}
+
+BOOL Terminal::MoveCursor(COORD pos)
+{
+    if (!SetConsoleCursorPosition(hStdout, pos))
+    {
+        CLEANUP_AND_RETURN_FALSE("Cannot set cursor position");
+    }
+}
+
+COORD Terminal::CursorPosition() const
+{
+    return cPos;
+}
+
+COORD Terminal::TerminalSize() const
+{
+    return cSize;
+}
+
+INPUT_RECORD Terminal::ReadInput()
+{
+    DWORD cNumRead;
+    INPUT_RECORD irInBuf[1];
+    if (!ReadConsoleInput(
+            hStdin,
+            irInBuf,
+            1,
+            &cNumRead))
+    {
+    }
+
+    return irInBuf[0];
+}
+
+VOID Terminal::Cleanup(std::string sMessage)
+{
+    std::cerr << sMessage << std::endl;
+    SetConsoleMode(hStdin, dwOldMode);
 }
 
 #else
