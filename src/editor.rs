@@ -1,4 +1,4 @@
-use super::{errors::EditorError, log, map_error};
+use super::{errors::EditorError, logger::Logger, map_error};
 use crossterm::{
     cursor,
     event::{read, Event, KeyCode, KeyEventKind},
@@ -6,7 +6,6 @@ use crossterm::{
 };
 use std::{
     fmt::Display,
-    fs::{File, OpenOptions},
     io::{stdout, Stdout, Write},
 };
 
@@ -34,7 +33,7 @@ impl Display for Mode {
 }
 
 pub struct Editor {
-    log_file: File,
+    logger: Logger,
     stdout: Stdout,
     size: (u16, u16),
     cursor_pos: (u16, u16),
@@ -49,13 +48,7 @@ impl Editor {
         }));
 
         let mut stdout = stdout();
-        let log_file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open("editor.log")
-            .unwrap();
+        let logger = Logger::new("editor.log");
 
         map_error!(terminal::enable_raw_mode(), EditorError::SetupError)?;
         map_error!(
@@ -70,7 +63,7 @@ impl Editor {
         let size = map_error!(terminal::size(), EditorError::SetupError)?;
 
         Ok(Self {
-            log_file,
+            logger,
             stdout,
             size,
             cursor_pos: (0, 0),
@@ -116,7 +109,6 @@ impl Editor {
                 self.cursor_pos.0 = self.cursor_pos.0.saturating_sub(1);
             }
             Action::MoveRight => {
-                log!(self.log_file, "{} {}", self.cursor_pos.0, self.size.0);
                 if self.cursor_pos.0 < self.size.0 {
                     self.cursor_pos.0 += 1;
                 }
@@ -144,10 +136,11 @@ impl Editor {
         Ok(())
     }
 
-    fn match_event(&self, event: Event) -> Option<Action> {
+    fn match_event(&mut self, event: Event) -> Option<Action> {
         match event {
             Event::Key(event) => {
                 if event.kind == KeyEventKind::Press {
+                    self.logger.info(&format!("Key Pressed: {:?}", event.code));
                     match event.code {
                         KeyCode::Char('q') => Some(Action::Exit),
                         KeyCode::Right | KeyCode::Char('l') => Some(Action::MoveRight),
