@@ -13,6 +13,8 @@ use std::{
 enum Action {
     MoveRight,
     MoveLeft,
+    MoveDown,
+    MoveUp,
     Exit,
     Resize(u16, u16),
 }
@@ -119,6 +121,14 @@ impl Editor {
                     self.cursor_pos.0 += 1;
                 }
             }
+            Action::MoveDown => {
+                if self.cursor_pos.1 < self.size.1 - 2 {
+                    self.cursor_pos.1 += 1;
+                }
+            }
+            Action::MoveUp => {
+                self.cursor_pos.1 = self.cursor_pos.1.saturating_sub(1);
+            }
             Action::Resize(width, height) => {
                 self.size = (width, height);
                 map_error!(
@@ -142,6 +152,8 @@ impl Editor {
                         KeyCode::Char('q') => Some(Action::Exit),
                         KeyCode::Right | KeyCode::Char('l') => Some(Action::MoveRight),
                         KeyCode::Left | KeyCode::Char('h') => Some(Action::MoveLeft),
+                        KeyCode::Up | KeyCode::Char('j') => Some(Action::MoveUp),
+                        KeyCode::Down | KeyCode::Char('k') => Some(Action::MoveDown),
                         _ => None,
                     }
                 } else {
