@@ -35,8 +35,8 @@ enum Mode {
 impl Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            &Mode::Insert => write!(f, "Insert"),
-            &Mode::Normal => write!(f, "Normal"),
+            &Mode::Insert => write!(f, "-- Insert --"),
+            &Mode::Normal => write!(f, "-- Normal --"),
         }
     }
 }
@@ -137,14 +137,6 @@ impl Editor {
             }
             Action::Resize(width, height) => {
                 self.size = (width, height);
-                map_error!(
-                    queue!(
-                        self.stdout,
-                        cursor::MoveTo(0, 0),
-                        terminal::Clear(terminal::ClearType::All)
-                    ),
-                    EditorError::SetupError
-                )?;
             }
             Action::EnterInsertMode => self.mode = Mode::Insert,
             Action::EnterNormalMode => self.mode = Mode::Normal,
@@ -186,6 +178,10 @@ impl Editor {
                         self.logger.info(&format!("Key Pressed: {:?}", event.code));
                         match event.code {
                             KeyCode::Char(char) => Some(Action::WriteChar(char)),
+                            KeyCode::Right => Some(Action::MoveRight),
+                            KeyCode::Left => Some(Action::MoveLeft),
+                            KeyCode::Up => Some(Action::MoveUp),
+                            KeyCode::Down => Some(Action::MoveDown),
                             KeyCode::Backspace => Some(Action::DeleteChar),
                             KeyCode::Esc => Some(Action::EnterNormalMode),
                             _ => None,
