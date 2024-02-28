@@ -2,7 +2,9 @@ use super::{errors::EditorError, logger::Logger, map_error};
 use crossterm::{
     cursor,
     event::{poll, read, Event, KeyCode, KeyEventKind},
-    execute, queue, style, terminal,
+    execute, queue,
+    style::{self, Attribute, Color, Stylize},
+    terminal,
 };
 use std::{
     fmt::Display,
@@ -35,8 +37,8 @@ enum Mode {
 impl Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            &Mode::Insert => write!(f, "-- Insert --"),
-            &Mode::Normal => write!(f, "-- Normal --"),
+            &Mode::Insert => write!(f, " INSERT "),
+            &Mode::Normal => write!(f, " NORMAL "),
         }
     }
 }
@@ -91,25 +93,55 @@ impl Editor {
                 }
             }
 
-            map_error!(
-                queue!(
-                    self.stdout,
-                    cursor::MoveTo(0, self.size.1 - 2),
-                    style::Print(&self.mode)
-                ),
-                EditorError::CursorMoveError
-            )?;
-
-            map_error!(
-                queue!(
-                    self.stdout,
-                    cursor::MoveTo(self.cursor_pos.0, self.cursor_pos.1)
-                ),
-                EditorError::CursorMoveError
-            )?;
-
+            self.draw_mode()?;
             self.stdout.flush().unwrap();
         }
+
+        Ok(())
+    }
+
+    fn draw_mode(&mut self) -> Result<(), EditorError> {
+        map_error!(
+            queue!(
+                self.stdout,
+                cursor::MoveTo(0, self.size.1 - 2),
+                style::PrintStyledContent(
+                    format!("{}", &self.mode)
+                        .on(Color::Rgb {
+                            r: 179,
+                            g: 70,
+                            b: 100
+                        })
+                        .attribute(Attribute::Bold)
+                )
+            ),
+            EditorError::CursorMoveError
+        )?;
+
+        map_error!(
+            queue!(
+                self.stdout,
+                cursor::MoveTo(self.mode.to_string().len() as u16, self.size.1 - 2),
+                style::PrintStyledContent(
+                    format!(
+                        "{:<width$}",
+                        " src/main.rs",
+                        width = self.size.0 as usize - self.mode.to_string().len()
+                    )
+                    .on(Color::DarkGrey)
+                    .attribute(Attribute::Bold)
+                )
+            ),
+            EditorError::CursorMoveError
+        )?;
+
+        map_error!(
+            queue!(
+                self.stdout,
+                cursor::MoveTo(self.cursor_pos.0, self.cursor_pos.1)
+            ),
+            EditorError::CursorMoveError
+        )?;
 
         Ok(())
     }
@@ -128,7 +160,7 @@ impl Editor {
                 }
             }
             Action::MoveDown => {
-                if self.cursor_pos.1 < self.size.1 - 2 {
+                if self.cursor_pos.1 < self.size.1 - 3 {
                     self.cursor_pos.1 += 1;
                 }
             }
